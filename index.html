@@ -1,0 +1,383 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vakantieplanner</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:Arial,Helvetica,sans-serif;background:#eef7fb;color:#111}
+:root{--head1:42px;--head2:34px;}
+
+.topbar{background:#fff;border-bottom:1px solid #d3e5ee;padding:12px 14px}
+.navrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+#yearSelect{width:110px;min-width:110px;max-width:110px}
+#monthSelect{width:150px;min-width:150px;max-width:150px;flex:0 0 150px}
+select,input,button{min-height:46px;padding:10px 12px;font-size:16px;border:1px solid #aeb7bf;border-radius:10px;background:#fff}
+button{font-weight:700;cursor:pointer;color:#0a76a9}
+.primary{background:#1598d3;color:#fff;border-color:#1598d3}
+.danger{background:#fff4f4;color:#8b0000;border-color:#d5aaaa}
+.muted{background:#f5f7f8;color:#333}
+.secondary{background:#fff;color:#0a76a9;border-color:#9fcfe4}
+
+main{padding:14px}
+.month-title{font-size:24px;font-weight:800;margin:0 0 10px}
+
+.tablewrap{
+  width:100%;
+  height:calc(100vh - 245px);
+  overflow:auto;
+  background:#fff;
+  border:1px solid #c4cdd5;
+  border-radius:14px;
+  box-shadow:0 6px 18px rgba(0,0,0,.08);
+  -webkit-overflow-scrolling:touch;
+}
+
+table{border-collapse:separate;border-spacing:0;table-layout:fixed;min-width:max-content;background:#fff}
+th,td{
+  border-right:1px solid #9aa3ad;
+  border-bottom:1px solid #9aa3ad;
+  text-align:center;
+  min-width:46px;
+  width:46px;
+  height:40px;
+  font-size:13px;
+  padding:0;
+  background:#fff;
+}
+thead th{background:#e6f5fc;font-weight:800;position:sticky}
+th.daynum{top:0;height:42px;z-index:6}
+th.weekday{top:42px;height:34px;z-index:5}
+
+.namecol{
+  position:sticky;
+  left:0;
+  min-width:190px;
+  width:190px;
+  max-width:190px;
+  text-align:left;
+  padding:0 10px;
+  font-weight:700;
+  background:#fff;
+  z-index:4;
+  border-right:2px solid #6f7c88;
+}
+thead .namecol{background:#e6f5fc}
+th.daynum.namecol{z-index:9}
+th.weekday.namecol{z-index:8}
+
+tr:first-child th{border-top:0}
+th:first-child, td:first-child{border-left:0}
+thead tr:first-child th{border-top:0}
+.weekend{background:#f0f0f0}
+.holiday{background:#fff2b8;font-size:8px;line-height:1.05;white-space:normal;word-break:break-word;color:#333}
+.vacation{background:#1598d3 !important;color:#fff;font-weight:800;font-size:18px}
+.cell{cursor:pointer;user-select:none}
+.cell.saving{opacity:.55}
+
+.adminpanel{margin-top:14px;background:#fff;border:1px solid #d7d7d7;border-radius:14px;padding:14px;box-shadow:0 6px 18px rgba(0,0,0,.08)}
+.paneltitle{font-size:18px;font-weight:800;margin:0 0 10px}
+.stack{display:grid;gap:10px}
+.row{display:grid;gap:10px;align-items:center}
+.row-add{grid-template-columns:1fr 170px}
+.row-remove{grid-template-columns:1fr 170px}
+.row-print{grid-template-columns:1fr 1fr 1fr}
+.status{display:block;font-size:13px;color:#555;line-height:1.35;margin-top:8px;padding:8px 10px;border-radius:10px;background:#f5f7f8;border:1px solid #e1e5e8}
+.status.ok{color:#137a28;background:#f2fbf4;border-color:#ccecd3}
+.status.bad{color:#a00000;background:#fff4f4;border-color:#eed0d0}
+.note{font-size:13px;color:#555;line-height:1.3;margin-top:8px}
+.hidden{display:none!important}
+
+@media (max-width: 900px){
+  main{padding:12px}
+  .tablewrap{height:calc(100vh - 245px)}
+  th,td{min-width:44px;width:44px;height:38px}
+  .namecol{min-width:160px;width:160px;max-width:160px}
+  th.daynum{height:40px}
+  th.weekday{top:40px;height:32px}
+}
+
+@media (max-width: 560px){
+  .row-add,.row-remove,.row-print{grid-template-columns:1fr}
+  .topbar{padding:10px}
+  main{padding:10px}
+  .tablewrap{height:calc(100vh - 250px)}
+  .namecol{min-width:145px;width:145px;max-width:145px}
+  th,td{min-width:42px;width:42px;height:36px;font-size:12px}
+  th.daynum{height:38px}
+  th.weekday{top:38px;height:30px}
+}
+
+@media print{
+  .topbar,.adminpanel{display:none !important}
+  html,body{background:#fff !important}
+  body{margin:0 !important;padding:0 !important}
+  main{padding:0 !important}
+  .month-title{display:block !important;font-size:18px !important;font-weight:800 !important;margin:0 0 8px !important}
+  .tablewrap{height:auto !important;overflow:visible !important;border:0 !important;box-shadow:none !important;border-radius:0 !important}
+  table{width:100% !important;min-width:0 !important;border-collapse:collapse !important}
+  thead th{position:static !important;background:#fff !important}
+  th,td{height:22px !important;min-width:0 !important;width:auto !important;font-size:8px !important;border:1px solid #7f8a96 !important}
+  .namecol{position:static !important;min-width:90px !important;width:90px !important;max-width:90px !important;box-shadow:none !important;background:#fff !important}
+  .weekend{background:#fff !important}
+  .holiday{background:#fff !important;color:#111 !important;font-size:6px !important}
+  .vacation{background:#fff !important;color:#111 !important;font-size:9px !important}
+  @page{size:A4 landscape;margin:8mm}
+}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="navrow">
+    <select id="yearSelect"></select>
+    <select id="monthSelect"></select>
+  </div>
+</div>
+
+<main>
+  <div id="planner"></div>
+
+  <section class="adminpanel">
+    <div class="paneltitle">Beheer</div>
+    <div class="stack">
+      <div class="row row-print">
+        <button id="printBtn" type="button" class="muted">Printen</button>
+        <button id="backupBtn" type="button" class="secondary">Backup downloaden</button>
+        <button id="restoreBtn" type="button" class="secondary">Backup laden</button>
+        <input id="restoreFile" type="file" accept="application/json,.json" class="hidden">
+      </div>
+      <div class="row row-add" id="addRow">
+        <input id="nameInput" placeholder="Naam toevoegen">
+        <button id="addBtn" class="primary" type="button">Toevoegen</button>
+      </div>
+
+      <div class="row row-remove" id="removeRow">
+        <select id="removeSelect"></select>
+        <button id="removeBtn" class="danger" type="button">Verwijderen</button>
+      </div>
+    </div>
+    <div id="status" class="status">Gedeelde planner laden...</div>
+  </section>
+</main>
+
+<script>
+const API_URL = "/.netlify/functions/planner-data";
+const DEFAULT_NAMES = ["Anne", "Anne (V)", "Roos", "Annemarth", "Chantal", "Danny", "Donna", "Elisha", "Esmee", "Ingrid", "Jacqueline", "Julie", "Katinka", "Kitty", "Lisa", "Mariska", "Mascha", "Nadine", "Nanda", "Nathalie", "Nova", "Rebecca", "Sascha", "Suzanne", "Willemijn", "Winnifred", "Bianca", "Laura", "Maris", "Saskia"];
+const MONTHS = ["Januari", "Februari", "Maart", "April", "Mei", "Juni", "Juli", "Augustus", "September", "Oktober", "November", "December"];
+const DAYS = ["Zo", "Ma", "Di", "Wo", "Do", "Vr", "Za"];
+const YEARS = [2024, 2025, 2026, 2027, 2028, 2029, 2030, 2031, 2032, 2033, 2034, 2035];
+
+const now = new Date();
+let currentMonth = now.getMonth(), year = now.getFullYear(), people = [], marked = {}, allData = null;
+let lastTableScrollTop = 0, lastTableScrollLeft = 0, lastWindowScrollY = 0;
+let shouldScrollToToday = true, busy = false, refreshTimer = null;
+const statusEl = document.getElementById("status");
+const yearSelect = document.getElementById("yearSelect");
+const monthSelect = document.getElementById("monthSelect");
+
+function setStatus(text, cls=""){ statusEl.textContent = text; statusEl.className = "status " + cls; }
+function daysInMonth(y,m){ return new Date(y,m+1,0).getDate(); }
+function safe(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function cleanKey(s){ return String(s).replace(/[.#$/\[\]]/g, "_"); }
+function rememberScroll(){
+  const wrap = document.querySelector(".tablewrap");
+  if(wrap){
+    lastTableScrollTop = wrap.scrollTop;
+    lastTableScrollLeft = wrap.scrollLeft;
+  }
+  lastWindowScrollY = window.scrollY || window.pageYOffset || 0;
+}
+function restoreScroll(){
+  const newWrap = document.querySelector(".tablewrap");
+  if(newWrap){
+    newWrap.scrollTop = lastTableScrollTop;
+    newWrap.scrollLeft = lastTableScrollLeft;
+  }
+  window.scrollTo(0, lastWindowScrollY);
+}
+function scrollToTodayIfNeeded(){
+  const today = new Date();
+  if(!shouldScrollToToday) return;
+  if(year !== today.getFullYear() || currentMonth !== today.getMonth()) return;
+  const wrap = document.querySelector(".tablewrap");
+  const todayCell = document.querySelector('th.daynum[data-day="' + today.getDate() + '"]');
+  if(wrap && todayCell){
+    const leftNameWidth = document.querySelector(".namecol")?.offsetWidth || 0;
+    const target = Math.max(0, todayCell.offsetLeft - leftNameWidth - 16);
+    wrap.scrollLeft = target;
+    lastTableScrollLeft = target;
+  }
+  shouldScrollToToday = false;
+}
+function sortNames(arr){ return [...arr].filter(Boolean).map(String).sort((a,b)=>a.localeCompare(b,'nl',{sensitivity:'base'})); }
+function easterSunday(y){ const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),month=Math.floor((h+l-7*m+114)/31),day=((h+l-7*m+114)%31)+1; return new Date(y,month-1,day); }
+function addDays(date,n){ const d=new Date(date); d.setDate(d.getDate()+n); return d; }
+function fmtDate(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function getHolidayMap(y){ const easter=easterSunday(y), map={}; map[fmtDate(new Date(y,0,1))]="Nieuwjaarsdag"; map[fmtDate(addDays(easter,-2))]="Goede Vrijdag"; map[fmtDate(easter)]="1e Paasdag"; map[fmtDate(addDays(easter,1))]="2e Paasdag"; const kings=new Date(y,3,27); if(kings.getDay()===0) map[fmtDate(new Date(y,3,26))]="Koningsdag"; else map[fmtDate(kings)]="Koningsdag"; map[fmtDate(new Date(y,4,5))]="Bevrijdingsdag"; map[fmtDate(addDays(easter,39))]="Hemelvaartsdag"; map[fmtDate(addDays(easter,49))]="1e Pinksterdag"; map[fmtDate(addDays(easter,50))]="2e Pinksterdag"; map[fmtDate(new Date(y,11,25))]="1e Kerstdag"; map[fmtDate(new Date(y,11,26))]="2e Kerstdag"; return map; }
+
+async function requestShared(method="GET", body=null){
+  const options = { method, cache: "no-store", headers: {} };
+  if(body){ options.headers["content-type"] = "application/json"; options.body = JSON.stringify(body); }
+  const url = API_URL + (method === "GET" ? "?year=" + encodeURIComponent(year) + "&t=" + Date.now() : "");
+  const res = await fetch(url, options);
+  let data = null;
+  try { data = await res.json(); } catch(_){ data = null; }
+  if(!res.ok || !data || data.ok === false){
+    const msg = data?.error || (res.status === 404 ? "Gedeelde opslag niet gevonden. Deze versie moet met Netlify Functions worden gedeployed." : "Opslaan/laden mislukt.");
+    throw new Error(msg);
+  }
+  return data;
+}
+
+function applyYearData(payload){
+  if(payload.data) allData = payload.data;
+  if(payload.yearData){
+    people = sortNames(Array.isArray(payload.yearData.people) ? payload.yearData.people : DEFAULT_NAMES);
+    marked = payload.yearData.marked || {};
+  }
+}
+
+async function loadShared(silent=false){
+  if(busy) return;
+  rememberScroll();
+  try{
+    if(!silent) setStatus("Gedeelde planner laden...");
+    const payload = await requestShared("GET");
+    applyYearData(payload);
+    render();
+    const tijd = new Date().toLocaleTimeString("nl-NL", { hour: "2-digit", minute: "2-digit" });
+    setStatus("Verbonden. Wijzigingen worden centraal opgeslagen. Laatst geladen: " + tijd + ".", "ok");
+  }catch(err){
+    people = people.length ? people : sortNames(DEFAULT_NAMES);
+    marked = marked || {};
+    render();
+    setStatus(err.message + " Controleer of de Netlify Function is mee gedeployed.", "bad");
+  }
+}
+
+async function saveAction(action, extra={}){
+  busy = true;
+  rememberScroll();
+  setStatus("Opslaan...");
+  try{
+    const payload = await requestShared("POST", { action, year, ...extra });
+    applyYearData(payload);
+    render();
+    setStatus("Opgeslagen. Iedereen ziet deze wijziging na verversen of automatisch binnen enkele seconden.", "ok");
+  }catch(err){
+    setStatus("Niet opgeslagen: " + err.message, "bad");
+  }finally{
+    busy = false;
+  }
+}
+
+function fillYears(){ if(!YEARS.includes(year)) year = 2026; yearSelect.innerHTML=""; YEARS.forEach(y=>{ const o=document.createElement("option"); o.value=y; o.textContent=y; if(y===year) o.selected=true; yearSelect.appendChild(o); }); }
+function fillMonthSelect(){
+  monthSelect.innerHTML="";
+  MONTHS.forEach((m,i)=>{
+    const o=document.createElement("option");
+    o.value=i;
+    o.textContent=m;
+    if(i===currentMonth) o.selected=true;
+    monthSelect.appendChild(o);
+  });
+}
+function renderRemoveSelect(){
+  const sel=document.getElementById("removeSelect"); sel.innerHTML="";
+  people.forEach(p=>{ const o=document.createElement("option"); o.value=p; o.textContent=p; sel.appendChild(o); });
+}
+function render(){
+  fillMonthSelect(); renderRemoveSelect();
+  const holidays=getHolidayMap(year), dim=daysInMonth(year,currentMonth);
+  let html='<div class="month-title">'+MONTHS[currentMonth]+' '+year+'</div><div class="tablewrap"><table><thead><tr><th class="namecol daynum">'+MONTHS[currentMonth]+' '+year+'</th>';
+  for(let d=1; d<=dim; d++) html+='<th class="daynum" data-day="'+d+'">'+d+'</th>';
+  html+='</tr><tr><th class="namecol weekday"></th>';
+  for(let d=1; d<=dim; d++) html+='<th class="weekday">'+DAYS[new Date(year,currentMonth,d).getDay()]+'</th>';
+  html+='</tr></thead><tbody>';
+  people.forEach(p=>{
+    html+='<tr><td class="namecol">'+safe(p)+'</td>';
+    for(let d=1; d<=dim; d++) {
+      const dt=new Date(year,currentMonth,d), dateKey=fmtDate(dt), dow=dt.getDay(), holidayText=holidays[dateKey]||"", key=cleanKey(p)+"_"+currentMonth+"_"+d, isMarked=!!marked[key];
+      let cls="cell"; if(dow===0||dow===6) cls+=" weekend"; if(holidayText) cls+=" holiday"; if(isMarked) cls+=" vacation";
+      html+='<td class="'+cls+'" data-key="'+key+'">'+(isMarked?'✓':holidayText)+'</td>';
+    }
+    html+='</tr>';
+  });
+  html+='</tbody></table></div>';
+  document.getElementById("planner").innerHTML=html;
+  restoreScroll();
+  scrollToTodayIfNeeded();
+
+  document.querySelectorAll(".cell").forEach(td=>{ 
+    td.onclick=async()=>{ 
+      if(busy) return;
+      const k=td.dataset.key;
+      td.classList.add("saving");
+      await saveAction("toggle", { key: k });
+    }; 
+  });
+}
+
+async function addName(){
+  const input=document.getElementById("nameInput"), n=input.value.trim(); if(!n) return;
+  await saveAction("addName", { name: n });
+  input.value="";
+}
+async function removeName(){
+  const n=document.getElementById("removeSelect").value; if(!n) return;
+  if(!confirm("Naam verwijderen: "+n+"? De vinkjes van deze naam verdwijnen ook.")) return;
+  await saveAction("removeName", { name: n });
+}
+function downloadBackup(){
+  const exportData = allData || { version: 1, years: { [String(year)]: { people, marked } }, exportedAt: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "vakantieplanner-backup-" + new Date().toISOString().slice(0,10) + ".json";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+function restoreBackup(){ document.getElementById("restoreFile").click(); }
+async function handleRestoreFile(e){
+  const file = e.target.files?.[0];
+  if(!file) return;
+  try{
+    const text = await file.text();
+    const data = JSON.parse(text);
+    if(!confirm("Backup laden? Dit overschrijft de gedeelde planner-data.")) return;
+    await saveAction("replaceAll", { data });
+  }catch(err){
+    setStatus("Backup kon niet worden geladen: " + err.message, "bad");
+  }finally{
+    e.target.value = "";
+  }
+}
+
+function startAutoRefresh(){
+  if(refreshTimer) clearInterval(refreshTimer);
+  refreshTimer = setInterval(()=>loadShared(true), 10000);
+}
+
+document.getElementById("addBtn").onclick=addName;
+document.getElementById("nameInput").addEventListener("keydown", e=>{ if(e.key==="Enter") addName(); });
+document.getElementById("removeBtn").onclick=removeName;
+document.getElementById("printBtn").onclick=()=>window.print();
+document.getElementById("backupBtn").onclick=downloadBackup;
+document.getElementById("restoreBtn").onclick=restoreBackup;
+document.getElementById("restoreFile").addEventListener("change", handleRestoreFile);
+yearSelect.addEventListener("change", ()=>{ rememberScroll(); year=parseInt(yearSelect.value,10)||2026; shouldScrollToToday = true; loadShared(); });
+monthSelect.addEventListener("change", ()=>{ rememberScroll(); currentMonth=parseInt(monthSelect.value,10)||0; shouldScrollToToday = true; render(); });
+
+fillYears();
+people=sortNames(DEFAULT_NAMES);
+render();
+loadShared();
+startAutoRefresh();
+</script>
+</body>
+</html>
